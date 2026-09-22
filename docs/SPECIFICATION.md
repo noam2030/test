@@ -21,7 +21,7 @@ The agent acts as **Nova**, a tier-1 customer support specialist for an e-commer
 | Parameter | Value | Description |
 | :--- | :--- | :--- |
 | **Agent Name** | `customer_support_agent` | Identifier within Google ADK |
-| **Model** | `gemini-2.5-flash` | Gemini model optimized for low latency and accurate tool calling |
+| **Model** | `gemini-3.6-flash` | Gemini model optimized for low latency and accurate tool calling |
 | **Fallback Model** | `gemini-1.5-flash` | Configurable fallback |
 | **Runner** | `InMemoryRunner` | Default session runner |
 

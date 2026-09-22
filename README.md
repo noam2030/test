@@ -11,7 +11,7 @@ This application implements **`customer_support_agent`**, an intelligent e-comme
 Google's **Agent Development Kit (ADK)** is an open-source, code-first framework designed for creating, evaluating, debugging, and deploying production-grade AI agents and multi-agent systems.
 
 The **Customer Support Agent** demonstrates:
-1. **Agent Definition**: Configuring agent persona, system instructions, and model settings with Google Gemini (`gemini-2.5-flash`).
+1. **Agent Definition**: Configuring agent persona, system instructions, and model settings with Google Gemini (`gemini-3.6-flash`).
 2. **Support Toolsets**: Connecting domain-specific customer support tools:
    - **Order Tracking**: Real-time status lookup and shipment tracking (`get_order_status`).
    - **Refund & Return Policy**: Policy evaluation based on item category and purchase age (`check_refund_policy`).
@@ -100,4 +100,4 @@ adk web app/agent.py
 - **Remote URL**: [https://github.com/noam2030/test](https://github.com/noam2030/test)
 - **Agent Name**: `customer_support_agent`
 - **Framework**: [Google Agent Development Kit (`google-adk`)](https://github.com/google/adk-python)
-- **Model**: Google Gemini (`gemini-2.5-flash` or `gemini-1.5-flash`)
+- **Model**: Google Gemini (`gemini-3.6-flash` or `gemini-1.5-flash`)

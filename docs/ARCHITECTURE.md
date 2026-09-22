@@ -16,7 +16,7 @@ flowchart TD
     subgraph ADK Core Engine
         Runner --> SessionMgr[(Session & History Store)]
         Runner --> Agent[customer_support_agent\nInstructions + Model Config]
-        Agent <--> LLM[Gemini Model\ne.g., gemini-2.5-flash]
+        Agent <--> LLM[Gemini Model\ne.g., gemini-3.6-flash]
         Agent <--> ToolRegistry[ADK Toolset Registry]
     end
 
@@ -39,7 +39,7 @@ flowchart TD
 
 ### 2.1 The Agent (`google.adk.agents.Agent`)
 - **Identifier**: `customer_support_agent`
-- **Model**: Default `gemini-2.5-flash` (or `gemini-1.5-flash`)
+- **Model**: Default `gemini-3.6-flash` (or `gemini-1.5-flash`)
 - **System Instructions**: Configured with customer service guidelines: polite tone, factual precision, mandatory tool verification for account/order inquiries, and standard escalation procedures when unable to resolve an issue directly.
 
 ### 2.2 Domain Toolsets (`app/tools/`)

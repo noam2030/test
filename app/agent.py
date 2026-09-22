@@ -34,8 +34,8 @@ Operational Guidelines:
    - Present tool results in natural conversational language. Never output raw JSON directly to the user.
 """
 
-# Determine model from environment or fallback to gemini-2.5-flash
-MODEL_NAME = os.getenv("ADK_MODEL", "gemini-2.5-flash")
+# Determine model from environment or fallback to gemini-3.6-flash
+MODEL_NAME = os.getenv("ADK_MODEL", "gemini-3.6-flash")
 
 # Define the root customer support agent for Google ADK
 root_agent = Agent(

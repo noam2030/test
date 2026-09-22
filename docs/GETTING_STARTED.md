@@ -37,7 +37,7 @@ source .venv/bin/activate
 2. Open `.env` and configure your API key:
    ```env
    GOOGLE_API_KEY=AIzaSy...your_gemini_api_key_here
-   ADK_MODEL=gemini-2.5-flash
+   ADK_MODEL=gemini-3.6-flash
    ```
 
 ---
