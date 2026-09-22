@@ -1,0 +1,20 @@
+# Google Cloud Project Configuration
+project_id = "extended-atrium-508907-b6"
+region     = "us-central1"
+
+# Service Configuration
+service_name       = "customer-support-agent"
+artifact_repo_name = "customer-support-agent-repo"
+adk_model          = "gemini-3.6-flash"
+
+# Scaling Configuration (Cost-effective scale-to-zero)
+min_instances = 0
+max_instances = 3
+cpu           = "1"
+memory        = "1Gi"
+
+# Networking & Security
+allow_unauthenticated = true
+
+# Optional: Paste your Gemini API key here or enter when prompted by Terraform
+# gemini_api_key = "AIzaSy..."

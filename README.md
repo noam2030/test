@@ -29,15 +29,26 @@ The **Customer Support Agent** demonstrates:
 
 ```text
 test/
+├── .dockerignore             # Docker build exclusion rules
 ├── .env.example              # Environment variables template
 ├── .gitignore                # Git ignore rules for venv, secrets, and caches
+├── Dockerfile                # Production container specification for Cloud Run
 ├── requirements.txt          # Python package dependencies
 ├── README.md                 # Project overview and documentation index
 ├── docs/
 │   ├── ARCHITECTURE.md       # Technical architecture & Google ADK runtime concepts
 │   ├── SPECIFICATION.md      # Functional specification of the customer_support_agent
 │   ├── SECURITY.md           # Model Armor & Agent Gateway security architecture
+│   ├── DEPLOYMENT.md         # Cloud Run & Terraform GCP deployment guide
 │   └── GETTING_STARTED.md    # Environment setup and developer guide
+├── terraform/                # Infrastructure as Code (GCP Cloud Run, Secrets, Artifact Registry)
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── outputs.tf
+│   ├── providers.tf
+│   └── terraform.tfvars.example
+├── scripts/
+│   └── deploy.sh             # End-to-end automated build and deployment script
 ├── app/
 │   ├── __init__.py
 │   ├── agent.py              # customer_support_agent definition with security hooks
@@ -79,6 +90,11 @@ test/
   - Tool schemas, input parameters, JSON responses, and error conditions.
   - Test matrix with sample queries (order status, refund checks, ticket creation).
 
+- **[Cloud Deployment & Terraform (`docs/DEPLOYMENT.md`)](./docs/DEPLOYMENT.md)**:
+  - Infrastructure as Code (IaC) setup for Google Cloud Platform.
+  - Cloud Run v2 containerized deployment with Secret Manager integration.
+  - Automated deployment script (`scripts/deploy.sh`) and verification steps.
+
 - **[Getting Started (`docs/GETTING_STARTED.md`)](./docs/GETTING_STARTED.md)**:
   - Step-by-step setup guide (`.venv`, `requirements.txt`).
   - Google Gemini API key configuration.
@@ -106,6 +122,21 @@ python main.py
 # 5. Or launch the Google ADK Web UI
 adk web app/agent.py
 ```
+
+### ☁️ Cloud Deployment (Cloud Run & Terraform)
+
+Deploy directly to Google Cloud Platform (`extended-atrium-508907-b6`) using the automated script:
+
+```bash
+# Ensure gcloud is authenticated
+gcloud auth login
+gcloud auth application-default login
+
+# Execute end-to-end build, push, and terraform apply
+./scripts/deploy.sh
+```
+
+See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) for full instructions, IAM configuration, and manual Terraform commands.
 
 ---
 
