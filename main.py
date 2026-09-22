@@ -5,6 +5,7 @@ import sys
 from dotenv import load_dotenv
 
 from app.runner import CustomerSupportRunner
+from app.security import default_agent_gateway
 from app.tools.tickets import list_tickets
 
 # Ensure .env is loaded
@@ -15,10 +16,12 @@ def print_banner():
     banner = """
 ========================================================================
      🎧 Nova - Google ADK Customer Support Agent
+     🛡️ Protected by Model Armor & Agent Gateway
 ========================================================================
 Type your inquiry below. Commands:
   • 'help'    - Show sample questions and available tools
   • 'tickets' - View all created support escalation tickets
+  • 'audit'   - View Model Armor security audit logs
   • 'clear'   - Reset conversation session memory
   • 'exit'    - Quit the application
 ========================================================================
@@ -42,11 +45,24 @@ Available Customer Support Capabilities:
      - "My headphones arrived damaged, please file an urgent ticket"
      - "I want to speak with a human specialist"
 
-Built-in Test Records:
-  - Orders: ORD-1001 (In Transit), ORD-1002 (Delivered), ORD-1003 (Perishables)
-  - Accounts: alice@example.com (Gold), bob@example.com (Silver)
+Security Guardrails:
+  - Model Armor automatically sanitizes PII (Credit Cards, SSNs, API Keys)
+  - Prompt injections and jailbreak attempts are blocked inline
 """
     print(help_text)
+
+
+def print_audit_log():
+    logs = default_agent_gateway.get_audit_log()
+    if not logs:
+        print("\n[Security Audit] No security events recorded yet.\n")
+        return
+
+    print(f"\n[Model Armor Security Audit Log ({len(logs)})]:")
+    for entry in logs:
+        print(f"  • [{entry.timestamp}] Stage: {entry.stage} | Action: {entry.action} | Threat: {entry.threat_level}")
+        print(f"    Flags: {', '.join(entry.flags) if entry.flags else 'None'}")
+        print(f"    Details: {entry.details}\n")
 
 
 def print_tickets():
@@ -65,7 +81,7 @@ def print_tickets():
         print(f"    Created: {t['created_at']} | Response SLA: {t['expected_response_time']}\n")
 
 
-def run_interactive_loop(runner: CustomerSupportRunner, user_id: str, session_id: str, verbose: bool):
+def run_interactive_loop(runner: CustomerSupportRunner, user_id: str, session_id: str, verbose: bool, security_audit: bool):
     print_banner()
     while True:
         try:
@@ -87,6 +103,9 @@ def run_interactive_loop(runner: CustomerSupportRunner, user_id: str, session_id
         elif cmd == "tickets":
             print_tickets()
             continue
+        elif cmd == "audit":
+            print_audit_log()
+            continue
         elif cmd == "clear":
             import asyncio
             asyncio.run(runner.clear_session(user_id, session_id))
@@ -98,6 +117,15 @@ def run_interactive_loop(runner: CustomerSupportRunner, user_id: str, session_id
 
         # Clear the "thinking..." line
         print(" " * 40, end="\r")
+
+        if (verbose or security_audit) and response.security_flags:
+            print(f"\n🛡️  [Model Armor Security Alert]:")
+            print(f"  • Threat Flags: {', '.join(response.security_flags)}")
+            if response.is_security_blocked:
+                print(f"  • Status: BLOCKED AT GATEWAY (No LLM tokens consumed)")
+            elif response.sanitized_prompt:
+                print(f"  • Sanitized Input: \"{response.sanitized_prompt}\"")
+            print("-" * 50)
 
         if verbose and response.tool_calls:
             print("\n[Tool Actions Invoked]:")
@@ -139,17 +167,24 @@ def main():
         action="store_true",
         help="Print verbose tool execution events.",
     )
+    parser.add_argument(
+        "--security-audit",
+        action="store_true",
+        help="Print detailed Model Armor and Agent Gateway security events.",
+    )
 
     args = parser.parse_args()
     runner = CustomerSupportRunner()
 
     if args.prompt:
         response = runner.ask_sync(args.prompt, user_id=args.user_id, session_id=args.session_id)
+        if (args.verbose or args.security_audit) and response.security_flags:
+            print(f"[Model Armor Alert]: Flags={response.security_flags} Blocked={response.is_security_blocked}")
         if args.verbose and response.tool_calls:
             print("[Tool Actions]:", response.tool_calls)
         print(response.text)
     else:
-        run_interactive_loop(runner, args.user_id, args.session_id, args.verbose)
+        run_interactive_loop(runner, args.user_id, args.session_id, args.verbose, args.security_audit)
 
 
 if __name__ == "__main__":

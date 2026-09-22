@@ -11,6 +11,9 @@ from google.genai import types
 from app.agent import root_agent
 
 
+from app.security import default_agent_gateway, default_model_armor, SecurityAction
+
+
 @dataclass
 class AgentResponse:
     """Structured response from the agent containing text, tool calls, and telemetry."""
@@ -20,6 +23,9 @@ class AgentResponse:
     events: list[Event] = field(default_factory=list)
     session_id: str = ""
     user_id: str = ""
+    security_flags: list[str] = field(default_factory=list)
+    is_security_blocked: bool = False
+    sanitized_prompt: str = ""
 
 
 class CustomerSupportRunner:
@@ -63,6 +69,29 @@ class CustomerSupportRunner:
         Returns:
             AgentResponse containing the agent's synthesized response text and tool calls.
         """
+        # 1. Inline Model Armor pre-screening
+        armor_check = default_model_armor.sanitize_prompt(prompt)
+        if armor_check.action == SecurityAction.BLOCK:
+            refusal_text = (
+                f"[Agent Gateway Security Refusal]\n"
+                f"{armor_check.rejection_reason}\n"
+                f"(Threat flags: {', '.join(armor_check.flags)})"
+            )
+            default_agent_gateway.log_event(
+                stage="INGRESS_USER_PROMPT",
+                result=armor_check,
+                user_id=user_id,
+                session_id=session_id,
+            )
+            return AgentResponse(
+                text=refusal_text,
+                session_id=session_id,
+                user_id=user_id,
+                security_flags=armor_check.flags,
+                is_security_blocked=True,
+                sanitized_prompt="",
+            )
+
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key or api_key.startswith("your_gemini"):
             return AgentResponse(
@@ -73,13 +102,15 @@ class CustomerSupportRunner:
                 ),
                 session_id=session_id,
                 user_id=user_id,
+                security_flags=armor_check.flags,
+                sanitized_prompt=armor_check.sanitized_text,
             )
 
         await self._ensure_session(user_id, session_id)
 
         user_content = types.Content(
             role="user",
-            parts=[types.Part.from_text(text=prompt)],
+            parts=[types.Part.from_text(text=armor_check.sanitized_text)],
         )
 
         response_texts: list[str] = []

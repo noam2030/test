@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 from google.adk.agents import Agent
 
+from app.security import default_agent_gateway
 from app.tools.accounts import get_customer_account
 from app.tools.orders import get_order_status
 from app.tools.policies import check_refund_policy
@@ -37,7 +38,7 @@ Operational Guidelines:
 # Determine model from environment or fallback to gemini-3.6-flash
 MODEL_NAME = os.getenv("ADK_MODEL", "gemini-3.6-flash")
 
-# Define the root customer support agent for Google ADK
+# Define the root customer support agent for Google ADK with Model Armor & Gateway security
 root_agent = Agent(
     name="customer_support_agent",
     description="Intelligent customer support agent for order tracking, refunds, and ticket escalation.",
@@ -49,6 +50,9 @@ root_agent = Agent(
         create_support_ticket,
         get_customer_account,
     ],
+    before_agent_callback=default_agent_gateway.before_agent_guard,
+    after_agent_callback=default_agent_gateway.after_agent_guard,
+    before_tool_callback=default_agent_gateway.before_tool_guard,
 )
 
 # Export alias for convenience

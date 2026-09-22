@@ -11,11 +11,14 @@ The `customer_support_agent` acts as an automated, empathic front-line support a
 ```mermaid
 flowchart TD
     User([Customer / User]) --> Interface[CLI REPL / Web UI / REST Endpoint]
-    Interface --> Runner[Google ADK Runner\nInMemoryRunner]
+    Interface --> IngressGW["Agent Gateway (Ingress)\nModel Armor Screening"]
+    
+    IngressGW -- Injection / Attack --> Refusal["Security Policy Refusal\n(0 LLM Tokens)"]
+    IngressGW -- Sanitized Input --> Runner[Google ADK Runner\nInMemoryRunner]
     
     subgraph ADK Core Engine
         Runner --> SessionMgr[(Session & History Store)]
-        Runner --> Agent[customer_support_agent\nInstructions + Model Config]
+        Runner --> Agent[customer_support_agent\nInstructions + Security Callbacks]
         Agent <--> LLM[Gemini Model\ne.g., gemini-3.6-flash]
         Agent <--> ToolRegistry[ADK Toolset Registry]
     end
@@ -31,6 +34,9 @@ flowchart TD
     T2 --> MockDB
     T3 --> MockDB
     T4 --> MockDB
+
+    Runner --> EgressGW["Agent Gateway (Egress)\nSecret Leakage Prevention"]
+    EgressGW --> User
 ```
 
 ---

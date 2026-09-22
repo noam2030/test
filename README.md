@@ -17,8 +17,11 @@ The **Customer Support Agent** demonstrates:
    - **Refund & Return Policy**: Policy evaluation based on item category and purchase age (`check_refund_policy`).
    - **Ticket Escalation**: Formal issue logging and escalation (`create_support_ticket`).
    - **Customer Account Lookup**: Profile details and active order retrieval (`get_customer_account`).
-3. **Execution Runtime**: Utilizing ADK's `InMemoryRunner` for conversational multi-turn session state management.
-4. **Developer Interfaces**: Interactive CLI (`main.py`), automated tests (`pytest`), and the Google ADK Web UI (`adk web`).
+3. **Security Integration**:
+   - **Model Armor**: Inline prompt sanitization, jailbreak/injection defense, and PII masking (credit cards, SSNs, API secrets).
+   - **Agent Gateway**: Native ADK ingress/egress proxy hooks intercepting traffic before model invocation and preventing data leaks.
+4. **Execution Runtime**: Utilizing ADK's `InMemoryRunner` for conversational multi-turn session state management.
+5. **Developer Interfaces**: Interactive CLI (`main.py`), automated tests (`pytest`), and the Google ADK Web UI (`adk web`).
 
 ---
 
@@ -33,22 +36,28 @@ test/
 ├── docs/
 │   ├── ARCHITECTURE.md       # Technical architecture & Google ADK runtime concepts
 │   ├── SPECIFICATION.md      # Functional specification of the customer_support_agent
+│   ├── SECURITY.md           # Model Armor & Agent Gateway security architecture
 │   └── GETTING_STARTED.md    # Environment setup and developer guide
 ├── app/
 │   ├── __init__.py
-│   ├── agent.py              # customer_support_agent definition & system prompt
-│   ├── runner.py             # Programmatic execution runner using InMemoryRunner
+│   ├── agent.py              # customer_support_agent definition with security hooks
+│   ├── runner.py             # Programmatic execution runner with security telemetry
+│   ├── security/             # Security integration layer
+│   │   ├── __init__.py
+│   │   ├── model_armor.py    # Sanitization engine, injection defense, PII redactor
+│   │   └── agent_gateway.py  # Ingress/egress hooks and security audit logger
 │   └── tools/                # Support tool implementations
 │       ├── __init__.py
 │       ├── orders.py         # Order lookup and tracking tool
 │       ├── policies.py       # Return and refund policy evaluator
 │       ├── tickets.py        # Support ticket creation & escalation
 │       └── accounts.py       # Customer profile & account lookup
-├── main.py                   # Interactive CLI terminal interface
+├── main.py                   # Interactive CLI with security audit capabilities
 └── tests/
     ├── __init__.py
     ├── test_tools.py         # Unit tests for customer support tools
-    └── test_agent.py         # Integration & configuration tests for the agent
+    ├── test_agent.py         # Integration & configuration tests for the agent
+    └── test_security.py      # Unit and integration tests for Model Armor & Gateway
 ```
 
 ---
@@ -58,6 +67,11 @@ test/
 - **[System Architecture (`docs/ARCHITECTURE.md`)](./docs/ARCHITECTURE.md)**:
   - Google ADK building blocks (`Agent`, `Runner`, `Tools`, `Session`).
   - Sequence diagrams for customer support multi-turn workflows and tool calling.
+
+- **[Security Architecture (`docs/SECURITY.md`)](./docs/SECURITY.md)**:
+  - Model Armor prompt sanitization and jailbreak defense heuristics.
+  - Bidirectional PII masking and data loss prevention (DLP).
+  - Agent Gateway ingress/egress callback implementation.
   - State management and error handling.
 
 - **[Application Specification (`docs/SPECIFICATION.md`)](./docs/SPECIFICATION.md)**:
