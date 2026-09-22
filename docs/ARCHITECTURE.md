@@ -1,125 +1,109 @@
-# System Architecture: Google ADK Test Application
+# System Architecture: Google ADK Customer Support Agent
 
-This document outlines the architectural design, core concepts, and runtime mechanics of the test application built on Google's **Agent Development Kit (ADK)**.
+This document outlines the architecture, components, data flows, and runtime mechanics of the **`customer_support_agent`** application built with Google's **Agent Development Kit (ADK)**.
 
 ---
 
-## 1. Google ADK Architectural Overview
+## 1. System Architecture
 
-The Google Agent Development Kit (ADK) is an open-source, code-first Python framework built to streamline agentic workflows. Rather than treating agents as black-box abstractions, ADK provides modular, inspectable primitives:
+The `customer_support_agent` acts as an automated, empathic front-line support assistant. It uses Google ADK to process customer queries, maintain conversation state, invoke domain-specific tools, and formulate helpful, grounded responses.
 
 ```mermaid
 flowchart TD
-    User([User / Client]) --> Interface[CLI / Web UI / Programmatic API]
-    Interface --> Runner[ADK Runner\ne.g., InMemoryRunner]
+    User([Customer / User]) --> Interface[CLI REPL / Web UI / REST Endpoint]
+    Interface --> Runner[Google ADK Runner\nInMemoryRunner]
     
     subgraph ADK Core Engine
-        Runner --> SessionMgr[(Session & Memory Store)]
-        Runner --> Agent[Agent Definition\nInstructions + Configuration]
+        Runner --> SessionMgr[(Session & History Store)]
+        Runner --> Agent[customer_support_agent\nInstructions + Model Config]
         Agent <--> LLM[Gemini Model\ne.g., gemini-2.5-flash]
-        Agent <--> Toolset[Tool Registry]
+        Agent <--> ToolRegistry[ADK Toolset Registry]
     end
 
-    subgraph Tools Execution
-        Toolset --> Tool1[Calculator Tool]
-        Toolset --> Tool2[System Diagnostics Tool]
-        Toolset --> Tool3[Extensible Custom Tools]
+    subgraph Customer Support Domain Tools
+        ToolRegistry --> T1[get_order_status\nTrack shipping & delivery]
+        ToolRegistry --> T2[check_refund_policy\nEvaluate return eligibility]
+        ToolRegistry --> T3[create_support_ticket\nEscalate complex issues]
+        ToolRegistry --> T4[get_customer_account\nLookup profile & orders]
     end
 
-    Tool1 --> ToolContext[Tool Context / Session State]
-    Tool2 --> ToolContext
+    T1 --> MockDB[(Mock Customer & Order Store)]
+    T2 --> MockDB
+    T3 --> MockDB
+    T4 --> MockDB
 ```
-
-### 1.1 The Core Components
-
-#### 1. The `Agent` (`google.adk.agents.Agent`)
-- Defines the agent's identity, system prompt (`instruction`), targeted foundation model (e.g. `gemini-2.5-flash`), and available tools.
-- Encapsulates how prompts are contextualized and which tool schemas are supplied to the LLM during generation calls.
-
-#### 2. Tools & Toolsets (`google.adk.tools`)
-- Python functions with type annotations and docstrings converted into function declarations (JSON schema) for LLM function calling.
-- Supports **ToolContext**: allows tools to read or update the agent's ongoing session state dynamically during execution.
-- Integrates with external protocols including Model Context Protocol (MCP) and OpenAPI specs.
-
-#### 3. Runners (`google.adk.runners`)
-- Orchestration engine responsible for managing conversation lifecycle, execution loops, function call dispatching, and turn management.
-- **`InMemoryRunner`**: Provides lightweight, in-memory session persistence, ideal for local testing, rapid iteration, and integration tests.
-- Handles multi-turn tool loops: receiving a model's `function_call`, executing the registered Python function, feeding the `function_response` back to the model, and repeating until a final text response is produced.
-
-#### 4. Sessions & Context
-- Sessions maintain conversational history, tool outputs, and execution telemetry across multiple user turns.
 
 ---
 
-## 2. Request & Execution Lifecycle
+## 2. Core Components
 
-The sequence below illustrates the end-to-end flow when a user sends a prompt that requires tool interaction:
+### 2.1 The Agent (`google.adk.agents.Agent`)
+- **Identifier**: `customer_support_agent`
+- **Model**: Default `gemini-2.5-flash` (or `gemini-1.5-flash`)
+- **System Instructions**: Configured with customer service guidelines: polite tone, factual precision, mandatory tool verification for account/order inquiries, and standard escalation procedures when unable to resolve an issue directly.
+
+### 2.2 Domain Toolsets (`app/tools/`)
+ADK exposes Python functions directly to Gemini as callable tools:
+
+1. **`get_order_status(order_id: str)`**:
+   - Queries tracking details, carrier status, expected delivery date, and order items.
+2. **`check_refund_policy(item_category: str, days_since_purchase: int)`**:
+   - Evaluates eligibility according to policy rules (e.g., 30 days for electronics, 45 days for apparel, non-returnable final sale items).
+3. **`create_support_ticket(customer_id: str, issue_summary: str, priority: str)`**:
+   - Formally generates a support ticket for human representative review when automated resolution is impossible.
+4. **`get_customer_account(email_or_id: str)`**:
+   - Fetches customer account information, membership tier, and recent order history.
+
+### 2.3 Runner & Session Management (`google.adk.runners.InMemoryRunner`)
+- Manages multi-turn conversations where previous answers, customer IDs, or order numbers remain accessible in conversation memory.
+- Orchestrates the tool invocation loop:
+  1. User asks a question.
+  2. Model detects need for tools and outputs `FunctionCall`.
+  3. ADK Runner executes the tool locally.
+  4. Tool output is injected as `FunctionResponse`.
+  5. Model synthesizes the final customer-facing reply.
+
+---
+
+## 3. Interaction Sequence Diagram
+
+Below is the workflow for a customer inquiring about an order's return eligibility:
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as User / Client
-    participant Runner as ADK Runner
-    participant Agent as ADK Agent
+    actor Customer as Customer
+    participant CLI as main.py / CLI
+    participant Runner as ADK InMemoryRunner
+    participant Agent as customer_support_agent
     participant LLM as Gemini Model
-    participant Tools as Custom Toolset
+    participant Tools as Support Tools
 
-    User->>Runner: Submit Prompt ("Calculate 25 * 40 and check status")
+    Customer->>CLI: "Can I return my order ORD-1002?"
+    CLI->>Runner: Send Prompt to active Session
     Runner->>Agent: Prepare Context & History
-    Agent->>LLM: Send Prompt + System Instructions + Tool Definitions
+    Agent->>LLM: Send Instructions, History, Tools, Prompt
     
-    LLM-->>Agent: Return Function Call (`calculate(expr="25 * 40")`)
-    Agent->>Tools: Execute `calculator.calculate("25 * 40")`
-    Tools-->>Agent: Return Tool Result (`{"result": 1000}`)
+    LLM-->>Agent: FunctionCall: `get_order_status(order_id="ORD-1002")`
+    Agent->>Tools: Execute `get_order_status("ORD-1002")`
+    Tools-->>Agent: {"status": "delivered", "delivered_days_ago": 12, "category": "electronics"}
     
-    Agent->>LLM: Send Function Response back to Model
-    LLM-->>Agent: Return Function Call (`check_status()`)
-    Agent->>Tools: Execute `system_info.check_status()`
-    Tools-->>Agent: Return Tool Result (`{"status": "healthy"}`)
+    Agent->>LLM: FunctionResponse: {"status": "delivered", "delivered_days_ago": 12, "category": "electronics"}
+    LLM-->>Agent: FunctionCall: `check_refund_policy(item_category="electronics", days_since_purchase=12)`
+    Agent->>Tools: Execute `check_refund_policy("electronics", 12)`
+    Tools-->>Agent: {"eligible": true, "max_allowed_days": 30, "condition_notes": "Original packaging required"}
     
-    Agent->>LLM: Send Function Response back to Model
-    LLM-->>Agent: Return Final Synthesized Response
-    Agent-->>Runner: Package Agent Response
-    Runner-->>User: Display Final Response
+    Agent->>LLM: FunctionResponse: {"eligible": true, "max_allowed_days": 30}
+    LLM-->>Agent: "Yes, you can return order ORD-1002! Electronics can be returned within 30 days..."
+    Agent-->>Runner: Package response
+    Runner-->>CLI: Deliver response to customer
+    CLI-->>Customer: Render response
 ```
 
 ---
 
-## 3. Test Application Design
+## 4. Resilience & Error Handling
 
-The test application implements a foundational pattern for building and evaluating agents before deploying to production environments (such as Google Cloud Run or Vertex AI Agent Engine).
-
-### 3.1 Modular Organization
-
-1. **Agent Specification Layer (`app/agent.py`)**:
-   - Declares the `root_agent` instance.
-   - Sets deterministic instructions and specifies tool dependencies.
-
-2. **Capability Layer (`app/tools/`)**:
-   - `calculator.py`: Safe expression evaluation, handling edge cases (division by zero, syntax errors).
-   - `system_info.py`: Inspection of environment parameters, system uptime, and test telemetry.
-
-3. **Execution Layer (`app/runner.py` & `main.py`)**:
-   - Instantiates `InMemoryRunner`.
-   - Provides a conversational REPL loop for interactive terminal testing.
-   - Exposes clean APIs for automated testing and programmatic invocation.
-
----
-
-## 4. Development Interfaces
-
-Google ADK provides three primary runtime modes:
-
-| Mode | Command | Description |
-| :--- | :--- | :--- |
-| **Interactive CLI** | `python main.py` | Command-line REPL for direct terminal interaction with the agent |
-| **ADK Web UI** | `adk web app/agent.py` | Google ADK built-in web playground for visual debugging and inspecting tool calls |
-| **Automated Tests** | `pytest tests/` | Automated verification of tool schemas, edge cases, and agent responses |
-
----
-
-## 5. Security & Best Practices
-
-- **Credential Management**: API keys (`GOOGLE_API_KEY`) must never be committed to Git. All secrets are managed via `.env` and excluded via `.gitignore`.
-- **Tool Guardrails**: Custom tools must validate inputs, avoid unsafe execution primitives (like unrestricted `eval`), and return structured error dictionaries instead of throwing uncaught exceptions.
-- **Model Agnosticism**: While optimized for Gemini, the architecture isolates tool definitions and runners, allowing straightforward adaptation to other models supported by ADK.
+- **Invalid Order/Account IDs**: Tools return clear structured error dictionaries (`{"success": false, "error": "Order not found"}`) allowing the agent to guide the user to verify their ID.
+- **Graceful Escalation**: If a customer is dissatisfied or an unexpected exception occurs, the agent proactively offers to call `create_support_ticket`.
+- **API Key Security**: Sensitive credentials stay in `.env` and are never logged or exposed in prompts.
