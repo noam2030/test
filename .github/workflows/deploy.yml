@@ -19,5 +19,5 @@ jobs:
 
       - name: Deploy
         run: |
-          gcloud run deploy hello-world --source . --region us-central1 --project ai-learning-499409 \
+          gcloud run deploy test --source . --region us-central1 --project ai-learning-499409 \
             --allow-unauthenticated --quiet
