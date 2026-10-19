@@ -30,7 +30,7 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html, body { height: 100%; }
+    html, body { min-height: 100%; }
 
     body {
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -38,7 +38,9 @@
       background: linear-gradient(-45deg, var(--bg-1), var(--bg-2), var(--bg-3), var(--bg-2));
       background-size: 400% 400%;
       animation: gradientShift 18s ease infinite;
-      overflow: hidden;
+      overflow-x: hidden;
+      min-height: 100vh;
+      padding: 2rem 0 3rem;
       display: grid;
       place-items: center;
       transition: color 0.4s ease;
@@ -190,6 +192,32 @@
     }
     .ghost:hover { background: rgba(255, 255, 255, 0.12); }
 
+    .input-area {
+      margin-top: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      align-items: stretch;
+    }
+    .input-area textarea {
+      font: inherit;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 0.8rem 1rem;
+      min-height: 90px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .input-area textarea::placeholder { color: var(--muted); }
+    .input-area textarea:focus {
+      border-color: var(--accent-2);
+      box-shadow: 0 0 0 3px rgba(120, 115, 245, 0.35);
+    }
+    .input-area button { align-self: center; }
+
     .counter {
       margin-top: 1.25rem;
       font-size: 0.9rem;
@@ -241,6 +269,12 @@
       <button class="ghost" id="theme" aria-label="Toggle theme">🌙 Theme</button>
     </div>
     <p class="counter" id="counter"></p>
+
+    <div class="input-area">
+      <label for="userInput" class="date">Write something:</label>
+      <textarea id="userInput" placeholder="Type your text here..."></textarea>
+      <button class="primary" id="helloBtn">Click me</button>
+    </div>
   </main>
 
   <footer>Served from Cloud Run · built with ♥</footer>
@@ -339,6 +373,11 @@
     }
     document.getElementById("celebrate").addEventListener("click", celebrate);
     document.getElementById("wave").addEventListener("click", celebrate);
+
+    // ---------- Text area + hello button ----------
+    document.getElementById("helloBtn").addEventListener("click", () => {
+      alert("hello!");
+    });
 
     // ---------- Particle network background ----------
     const canvas = document.getElementById("particles");
