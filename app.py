@@ -4,7 +4,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 class HelloHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        body = b"<!doctype html><html><head><title>Hello</title></head><body><h1>Hello, World!</h1></body></html>"
+        body = b"<!doctype html><html><head><title>Hello</title></head><body><h1>Good luck Elad!</h1></body></html>"
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
